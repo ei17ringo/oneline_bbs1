@@ -20,6 +20,19 @@
   
   }
 
+  //action = deleteがGET送信で送られてきた時
+  if (!empty($_GET) && ($_GET['action'] == 'delete')){
+    //2.SQL文作成（DELETE文）
+    $sql = "DELETE FROM `posts` WHERE `id`=".$_GET['id'];
+    //var_dump($sql);
+    $stmt = $dbh->prepare($sql);
+    $stmt->execute();
+
+    //二重に実行されないように、最初のURLへリダイレクト
+    header('Location: bbs.php');
+    exit;
+  }
+
   //SQL文の作成(SELECT文)
   $sql = 'SELECT * FROM `posts` ORDER BY `created` DESC';
 
@@ -136,6 +149,7 @@
                   <div class="timeline-label">
                       <h2><a href="#"><?php echo $post_each['nickname']; ?></a> <span><?php echo $created; ?></span></h2>
                       <p><?php echo $post_each['comment']; ?></p>
+                      <a href="bbs.php?id=<?php echo $post_each['id']; ?>&action=delete"><i class="fa fa-trash"></i></a>
                   </div>
               </div>
 
