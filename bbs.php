@@ -8,6 +8,22 @@
   $dbh = new PDO($dns,$user,$password);
   $dbh->query('SET NAMES utf8');
 
+  //⑤UPDATE文を発行して更新処理
+  //action = updateがGET送信で送られてきた時
+  if (!empty($_GET) && ($_GET['action'] == 'update')){
+    $nickname = $_POST['nickname'];
+    $comment = $_POST['comment'];
+    //2.SQL文作成（SELECT文）
+    $sql = "UPDATE `posts` SET `nickname`= '".$nickname."',`comment`='".$comment."' WHERE `id`=".$_GET['id'];
+    //var_dump($sql);
+    $stmt = $dbh->prepare($sql);
+    $stmt->execute();
+
+    //二重に実行されないように、最初のURLへリダイレクト
+    header('Location: bbs.php');
+    exit;
+  }
+
   //POST送信が行われた時
   if (!empty($_POST)){
     $nickname = $_POST['nickname'];
@@ -33,6 +49,22 @@
     exit;
   }
 
+  //②③action = editがGET送信で送られてきた時
+  if (!empty($_GET) && ($_GET['action'] == 'edit')){
+    //2.SQL文作成（SELECT文）
+    $sql = "SELECT * FROM `posts` WHERE `id`=".$_GET['id'];
+    //var_dump($sql);
+    $stmt = $dbh->prepare($sql);
+    $stmt->execute();
+
+    $edit_data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // //二重に実行されないように、最初のURLへリダイレクト
+    // header('Location: bbs.php');
+    // exit;
+  }
+
+  
   //SQL文の作成(SELECT文)
   $sql = 'SELECT * FROM `posts` ORDER BY `created` DESC';
 
@@ -105,23 +137,30 @@
       <!-- 画面左側 -->
       <div class="col-md-4 content-margin-top">
         <!-- form部分 -->
+        <!-- ④編集ボタンが押されていたら、該当データのnickname,commentを表示 -->
+        <!-- ④編集ボタンが押されていたら、action先を変更 -->
+        <?php if (isset($edit_data)){ ?>
+        <form action="bbs.php?id=<?php echo $edit_data['id']; ?>&action=update" method="post">
+        <?php }else{ ?>  
         <form action="bbs.php" method="post">
+        <?php } ?>
           <!-- nickname -->
           <div class="form-group">
             <div class="input-group">
-              <input type="text" name="nickname" class="form-control" id="validate-text" placeholder="nickname" required>
+              <input type="text" name="nickname" class="form-control" id="validate-text" placeholder="nickname" value="<?php if(isset($edit_data)){ echo $edit_data['nickname']; } ?>" required>
               <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
             </div>
           </div>
           <!-- comment -->
           <div class="form-group">
             <div class="input-group" data-validate="length" data-length="4">
-              <textarea type="text" class="form-control" name="comment" id="validate-length" placeholder="comment" required></textarea>
+              <textarea type="text" class="form-control" name="comment" id="validate-length" placeholder="comment" required><?php if(isset($edit_data)){ echo $edit_data['comment']; } ?></textarea>
               <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
             </div>
           </div>
           <!-- つぶやくボタン -->
-          <button type="submit" class="btn btn-primary col-xs-12" disabled>つぶやく</button>
+          <!-- ④編集ボタンが押されていたら、更新するという表記に変更 -->
+          <button type="submit" class="btn btn-primary col-xs-12" disabled><?php if(isset($edit_data)){ echo '更新する'; }else{ echo 'つぶやく';} ?></button>
         </form>
       </div>
 
@@ -142,10 +181,14 @@
 
           <article class="timeline-entry">
               <div class="timeline-entry-inner">
+                  <!-- ①歯車をクリック -->
+                  <!-- ②クリック後、http://localhost/oneline_bbs/bbs.php?action=edit&id=8のようなアドレスに遷移 -->
+                  <a href="bbs.php?id=<?php echo $post_each['id']; ?>&action=edit">
                   <div class="timeline-icon bg-success">
                       <i class="entypo-feather"></i>
                       <i class="fa fa-cogs"></i>
                   </div>
+                  </a>
                   <div class="timeline-label">
                       <h2><a href="#"><?php echo $post_each['nickname']; ?></a> <span><?php echo $created; ?></span></h2>
                       <p><?php echo $post_each['comment']; ?></p>
